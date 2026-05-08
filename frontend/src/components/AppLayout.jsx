@@ -3,7 +3,8 @@ import { Layout, Menu, Button, Typography, theme } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined, MailOutlined, ContactsOutlined, UnorderedListOutlined,
-  DollarOutlined, ShoppingCartOutlined, GlobalOutlined, LogoutOutlined
+  DollarOutlined, ShoppingCartOutlined, GlobalOutlined, LogoutOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
 import { getUser, logout } from '../utils/api';
 
@@ -25,6 +26,7 @@ export default function AppLayout({ children }) {
     { key: '/pricing', icon: <DollarOutlined />, label: '購買額度' },
     { key: '/orders', icon: <ShoppingCartOutlined />, label: '訂單' },
     { key: '/domains', icon: <GlobalOutlined />, label: '寄件網域' },
+    { key: '/team', icon: <TeamOutlined />, label: '團隊成員' },
   ];
 
   const handleLogout = () => { logout(); navigate('/login'); };

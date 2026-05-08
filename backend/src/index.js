@@ -33,6 +33,7 @@ const campaignRoutes = require('./routes/campaigns');
 const webhookRoutes = require('./routes/webhooks');
 const billingRoutes = require('./routes/billing');
 const ordersRoutes = require('./routes/orders');
+const clientUserRoutes = require('./routes/clientUsers');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -44,6 +45,7 @@ app.use('/api/campaigns', campaignRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/orders', ordersRoutes);
+app.use('/api/client-users', clientUserRoutes);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));

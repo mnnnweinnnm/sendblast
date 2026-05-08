@@ -12,6 +12,7 @@ import Domains from './pages/Domains';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminClients from './pages/AdminClients';
 import AdminPackages from './pages/AdminPackages';
+import TeamMembers from './pages/TeamMembers';
 import { getUser } from './utils/api';
 
 function ProtectedRoute({ children, admin }) {
@@ -34,6 +35,7 @@ export default function App() {
       <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
       <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
       <Route path="/domains" element={<ProtectedRoute><Domains /></ProtectedRoute>} />
+      <Route path="/team" element={<ProtectedRoute><TeamMembers /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute admin><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/clients" element={<ProtectedRoute admin><AdminClients /></ProtectedRoute>} />
       <Route path="/admin/packages" element={<ProtectedRoute admin><AdminPackages /></ProtectedRoute>} />
