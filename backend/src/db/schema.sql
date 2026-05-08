@@ -25,6 +25,21 @@ CREATE TABLE IF NOT EXISTS clients (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Credit Transactions (額度異動記錄)
+CREATE TABLE IF NOT EXISTS credit_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    type VARCHAR(20) NOT NULL,  -- 'recharge' (買額度) | 'spend' (發信扣點) | 'adjust' (手動調整)
+    amount INTEGER NOT NULL,    -- 異動數量（正數=增加，負數=減少）
+    balance_after INTEGER NOT NULL, -- 異動後餘額
+    order_id UUID REFERENCES orders(id),
+    campaign_id UUID,
+    note VARCHAR(255),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_client ON credit_transactions(client_id, created_at DESC);
+
 -- Client Users (客戶公司成員)
 CREATE TABLE IF NOT EXISTS client_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

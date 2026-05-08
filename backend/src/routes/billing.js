@@ -34,4 +34,24 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Credit transaction history
+router.get('/transactions', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT ct.*, cp.name as order_package_name, cam.name as campaign_name
+       FROM credit_transactions ct
+       LEFT JOIN orders o ON ct.order_id = o.id
+       LEFT JOIN credit_packages cp ON o.package_id = cp.id
+       LEFT JOIN campaigns cam ON ct.campaign_id = cam.id
+       WHERE ct.client_id = $1
+       ORDER BY ct.created_at DESC
+       LIMIT 100`,
+      [req.user.client_id]
+    );
+    res.json({ transactions: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

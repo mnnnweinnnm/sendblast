@@ -38,12 +38,19 @@ async function checkPendingOrders() {
         [match.transaction_id, order.id]
       );
       if (updated.rows[0]) {
+        const bal = order.credits;
         await db.query(
           `UPDATE clients
            SET credit_balance = credit_balance + $1,
                total_purchased = total_purchased + $1
            WHERE id=$2`,
-          [order.credits, order.client_id]
+          [bal, order.client_id]
+        );
+        await db.query(
+          `INSERT INTO credit_transactions (client_id, type, amount, balance_after, order_id, note)
+           SELECT $1, 'recharge', $2, credit_balance, $3, 'USDT 充值購買額度'
+           FROM clients WHERE id=$1`,
+          [order.client_id, bal, order.id]
         );
         confirmed++;
       }

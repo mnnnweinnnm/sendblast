@@ -73,7 +73,14 @@ const worker = createWorker('campaign-sender', async (job) => {
     console.log(`[Sender] Batch ${Math.floor(i/BATCH_SIZE)+1}: sent ${emails.length} emails`);
 
     // Deduct credits
-    await db.query('UPDATE clients SET credit_balance = credit_balance - $1, total_sent = total_sent + $1 WHERE id=$2', [emails.length, client_id]);
+    const spent = emails.length;
+    await db.query('UPDATE clients SET credit_balance = credit_balance - $1, total_sent = total_sent + $1 WHERE id=$2', [spent, client_id]);
+    await db.query(
+      `INSERT INTO credit_transactions (client_id, type, amount, balance_after, campaign_id, note)
+       SELECT $1, 'spend', -$2, credit_balance, $3, '發送信箱扣點'
+       FROM clients WHERE id=$1`,
+      [client_id, spent, campaignId]
+    );
 
     // Log events
     for (const contact of batch) {

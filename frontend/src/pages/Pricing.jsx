@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, Row, Col, Button, Typography, message, Modal, Descriptions, Table, Tag, Statistic, Space } from 'antd';
 import { ArrowUpOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import AppLayout from '../components/AppLayout';
 import api from '../utils/api';
@@ -10,11 +11,12 @@ const { Title, Text } = Typography;
 export default function Pricing() {
   const [packages, setPackages] = useState([]);
   const [balance, setBalance] = useState(0);
-  const [orders, setOrders] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [buyOpen, setBuyOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [orderResult, setOrderResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadData();
@@ -22,17 +24,29 @@ export default function Pricing() {
 
   const loadData = async () => {
     try {
-      const [pkgRes, meRes] = await Promise.all([
+      const [pkgRes, meRes, txRes] = await Promise.all([
         api.get('/orders/packages'),
         api.get('/auth/me'),
+        api.get('/billing/transactions'),
       ]);
       setPackages(pkgRes.data.packages || []);
       setBalance(meRes.data.user?.credit_balance || 0);
-    } catch {}
-    try {
-      const ordersRes = await api.get('/orders/me');
-      setOrders(ordersRes.data.orders || []);
-    } catch {}
+      setTransactions(txRes.data.transactions || []);
+    } catch (e) {
+      // fallback: try orders endpoint
+      try {
+        const ordersRes = await api.get('/orders/me');
+        const tx = (ordersRes.data.orders || []).map(o => ({
+          id: o.id,
+          type: 'recharge',
+          amount: o.status === 'confirmed' ? (o.credits || 0) : 0,
+          balance_after: 0,
+          created_at: o.created_at,
+          note: `購買 ${o.package_name || ''} (${o.usdt_amount} USDT)`,
+        }));
+        setTransactions(tx);
+      } catch {}
+    }
   };
 
   const handleBuy = async () => {
@@ -41,7 +55,7 @@ export default function Pricing() {
       const { data } = await api.post('/orders', { package_id: selected.id });
       setOrderResult(data.order);
       message.success('訂單已建立，請完成轉帳');
-      loadData(); // refresh balance
+      loadData();
     } catch (err) {
       message.error(err.response?.data?.error || '建立訂單失敗');
     } finally {
@@ -49,21 +63,42 @@ export default function Pricing() {
     }
   };
 
-  const orderColumns = [
+  const typeTag = (t) => {
+    const map = {
+      recharge: <Tag color="green">充值</Tag>,
+      spend: <Tag color="red">花費</Tag>,
+      adjust: <Tag color="blue">調整</Tag>,
+    };
+    return map[t] || <Tag>{t}</Tag>;
+  };
+
+  const txColumns = [
     { title: '時間', dataIndex: 'created_at', render: v => dayjs(v).format('YYYY-MM-DD HH:mm') },
-    { title: '套裝', dataIndex: 'package_name', render: v => v || '—' },
-    { title: '金額', dataIndex: 'usdt_amount', render: v => `${v} USDT` },
+    { title: '類型', dataIndex: 'type', render: typeTag },
     {
-      title: '狀態',
-      dataIndex: 'status',
-      render: s => {
-        const map = { pending: <Tag color="orange">待付款</Tag>, confirmed: <Tag color="green">已到帳</Tag>, cancelled: <Tag>已取消</Tag> };
-        return map[s] || <Tag>{s}</Tag>;
+      title: '變動',
+      dataIndex: 'amount',
+      render: (v, r) => {
+        const color = r.type === 'spend' ? '#ff4d4f' : '#52c41a';
+        const prefix = v > 0 ? '+' : '';
+        return <Text style={{ color, fontWeight: 600 }}>{prefix}{v}</Text>;
       }
     },
-    { title: 'TRC-20 地址', dataIndex: 'trc20_address', ellipsis: true, render: v => <Text copyable style={{ fontSize: 11 }}>{v}</Text> },
-    { title: '交易 hash', dataIndex: 'tx_hash', ellipsis: true, render: v => v ? <Text copyable style={{ fontSize: 11 }}>{v}</Text> : <Text type="secondary">—</Text> },
+    { title: '異動後餘額', dataIndex: 'balance_after', render: v => v?.toLocaleString() || '—' },
+    {
+      title: '說明',
+      dataIndex: 'note',
+      render: (v, r) => {
+        if (v) return v;
+        if (r.type === 'spend' && r.campaign_name) return `發送：${r.campaign_name}`;
+        if (r.type === 'recharge' && r.order_package_name) return `購買額度：${r.order_package_name}`;
+        return '—';
+      }
+    },
   ];
+
+  const totalRecharge = transactions.filter(t => t.type === 'recharge').reduce((s, t) => s + t.amount, 0);
+  const totalSpend = Math.abs(transactions.filter(t => t.type === 'spend').reduce((s, t) => s + t.amount, 0));
 
   return (
     <AppLayout>
@@ -103,10 +138,26 @@ export default function Pricing() {
           </Row>
         </div>
 
-        {/* 訂單歷史 */}
+        {/* 額度歷史 */}
         <div>
-          <Title level={5}>訂單歷史</Title>
-          <Table columns={orderColumns} dataSource={orders} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
+          <Row justify="space-between" align="bottom" style={{ marginBottom: 12 }}>
+            <Title level={5} style={{ margin: 0 }}>額度歷史</Title>
+            <Space>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                累計充值 <Text style={{ color: '#52c41a', fontWeight: 600 }}>+{totalRecharge.toLocaleString()}</Text>
+                {'  '}累計花費 <Text style={{ color: '#ff4d4f', fontWeight: 600 }}>-{totalSpend.toLocaleString()}</Text>
+              </Text>
+              <Button size="small" onClick={loadData}>重整</Button>
+            </Space>
+          </Row>
+          <Table
+            columns={txColumns}
+            dataSource={transactions}
+            rowKey="id"
+            size="small"
+            pagination={{ pageSize: 15 }}
+            style={{ background: '#fff' }}
+          />
         </div>
       </Space>
 
