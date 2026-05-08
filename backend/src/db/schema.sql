@@ -2,7 +2,7 @@
 -- PostgreSQL
 
 -- Platform Admins (韋瀚團隊)
-CREATE TABLE platform_admins (
+CREATE TABLE IF NOT EXISTS platform_admins (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE platform_admins (
 );
 
 -- Clients (外部公司/客戶)
-CREATE TABLE clients (
+CREATE TABLE IF NOT EXISTS clients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE clients (
 );
 
 -- Client Users (客戶公司成員)
-CREATE TABLE client_users (
+CREATE TABLE IF NOT EXISTS client_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE client_users (
 );
 
 -- Credit Packages (額度套裝)
-CREATE TABLE credit_packages (
+CREATE TABLE IF NOT EXISTS credit_packages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     credits INTEGER NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE credit_packages (
 -- Orders (USDT 訂單)
 CREATE SEQUENCE IF NOT EXISTS order_deposit_index_seq;
 
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     package_id UUID REFERENCES credit_packages(id),
@@ -65,7 +65,7 @@ CREATE TABLE orders (
 );
 
 -- Sending Domains (寄件網域 - 共用資源池)
-CREATE TABLE sending_domains (
+CREATE TABLE IF NOT EXISTS sending_domains (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     domain VARCHAR(255) UNIQUE NOT NULL,
     from_name_default VARCHAR(255),
@@ -79,7 +79,7 @@ CREATE TABLE sending_domains (
 );
 
 -- Contact Lists (名單)
-CREATE TABLE contact_lists (
+CREATE TABLE IF NOT EXISTS contact_lists (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE contact_lists (
 );
 
 -- Contacts (聯絡人)
-CREATE TABLE contacts (
+CREATE TABLE IF NOT EXISTS contacts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE contacts (
 );
 
 -- Contact List Members
-CREATE TABLE contact_list_members (
+CREATE TABLE IF NOT EXISTS contact_list_members (
     contact_id UUID NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
     list_id UUID NOT NULL REFERENCES contact_lists(id) ON DELETE CASCADE,
     subscribed_at TIMESTAMPTZ DEFAULT NOW(),
@@ -114,7 +114,7 @@ CREATE TABLE contact_list_members (
 );
 
 -- Campaigns
-CREATE TABLE campaigns (
+CREATE TABLE IF NOT EXISTS campaigns (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -141,7 +141,7 @@ CREATE TABLE campaigns (
 );
 
 -- Email Events (追蹤)
-CREATE TABLE email_events (
+CREATE TABLE IF NOT EXISTS email_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     campaign_id UUID REFERENCES campaigns(id) ON DELETE SET NULL,
     client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -153,18 +153,18 @@ CREATE TABLE email_events (
 );
 
 -- Indexes
-CREATE INDEX idx_contacts_client_id ON contacts(client_id);
-CREATE INDEX idx_contacts_status ON contacts(status);
-CREATE INDEX idx_contacts_email ON contacts(email);
-CREATE INDEX idx_contact_lists_client_id ON contact_lists(client_id);
-CREATE INDEX idx_campaigns_client_id ON campaigns(client_id);
-CREATE INDEX idx_campaigns_status ON campaigns(status);
-CREATE INDEX idx_email_events_campaign_id ON email_events(campaign_id);
-CREATE INDEX idx_email_events_contact_id ON email_events(contact_id);
-CREATE INDEX idx_email_events_type ON email_events(event_type);
-CREATE INDEX idx_orders_client_id ON orders(client_id);
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_client_users_client_id ON client_users(client_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_client_id ON contacts(client_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts(status);
+CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email);
+CREATE INDEX IF NOT EXISTS idx_contact_lists_client_id ON contact_lists(client_id);
+CREATE INDEX IF NOT EXISTS idx_campaigns_client_id ON campaigns(client_id);
+CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_email_events_campaign_id ON email_events(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_email_events_contact_id ON email_events(contact_id);
+CREATE INDEX IF NOT EXISTS idx_email_events_type ON email_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_client_users_client_id ON client_users(client_id);
 
 
 -- Idempotent upgrades for existing deployments
