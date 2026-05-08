@@ -5,7 +5,8 @@ const { Resend } = require('resend');
 const Handlebars = require('handlebars');
 const crypto = require('crypto');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const SEND_MODE = (process.env.SEND_MODE || 'live').toLowerCase();
+const resend = SEND_MODE === 'live' ? new Resend(process.env.RESEND_API_KEY) : null;
 const BATCH_SIZE = 100;  // Resend batch limit
 const RATE_LIMIT = 10;   // per second
 
@@ -63,8 +64,12 @@ const worker = createWorker('campaign-sender', async (job) => {
       };
     });
 
-    // Send batch
-    const result = await resend.batch.send(emails);
+    // Send batch (mock mode just logs and pretends success)
+    if (SEND_MODE === 'live') {
+      await resend.batch.send(emails);
+    } else {
+      console.log(`[Sender] MOCK send (SEND_MODE=${SEND_MODE}) ${emails.length} emails`);
+    }
     console.log(`[Sender] Batch ${Math.floor(i/BATCH_SIZE)+1}: sent ${emails.length} emails`);
 
     // Deduct credits
