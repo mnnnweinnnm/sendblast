@@ -29,13 +29,7 @@ async function migrate() {
     }
     console.log('✅ Default credit packages inserted');
 
-    // Insert the verified sendblast.top sending domain
-    await pool.query(
-      `INSERT INTO sending_domains (domain, from_name_default, status, dkim_status, spf_status, dmarc_status, resend_domain_id, verified_at)
-       VALUES ('sendblast.top', 'SendBlast', 'verified', 'verified', 'verified', 'verified', '472bdcbc-e861-4f72-a6c4-80d5b6058bdb', NOW())
-       ON CONFLICT (domain) DO NOTHING`
-    );
-    console.log('✅ Default sending domain (sendblast.top) inserted');
+    // No default sending domain — clients add their own via backend
 
   } catch (err) {
     console.error('❌ Migration failed:', err.message);
