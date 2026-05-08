@@ -34,14 +34,26 @@ router.get('/:id', authenticate, requireAdmin, async (req, res) => {
 // Create client (Admin)
 router.post('/', authenticate, requireAdmin, async (req, res) => {
   try {
-    const { company_name, email, password } = req.body;
+    const { company_name, email, password, name } = req.body;
     const hash = await bcrypt.hash(password, 12);
-    const result = await db.query(
+
+    await db.query('BEGIN');
+    const clientResult = await db.query(
       'INSERT INTO clients (company_name, email, password_hash) VALUES ($1,$2,$3) RETURNING *',
       [company_name, email, hash]
     );
-    res.json({ client: result.rows[0] });
+    const client = clientResult.rows[0];
+
+    const userResult = await db.query(
+      `INSERT INTO client_users (client_id, email, password_hash, name, role)
+       VALUES ($1,$2,$3,$4,'admin') RETURNING id, email, name, role`,
+      [client.id, email, hash, name || company_name || email]
+    );
+    await db.query('COMMIT');
+
+    res.json({ client, user: userResult.rows[0] });
   } catch (err) {
+    await db.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') return res.status(409).json({ error: 'Email already exists' });
     res.status(500).json({ error: err.message });
   }

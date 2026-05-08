@@ -91,16 +91,18 @@ router.get('/orders', async (req, res) => {
 // === Global Stats ===
 router.get('/stats', async (req, res) => {
   try {
-    const [clients, totalSent, totalRevenue, recentOrders] = await Promise.all([
+    const [clients, totalSent, totalRevenue, recentOrders, totalCampaigns] = await Promise.all([
       db.query('SELECT COUNT(*) as cnt FROM clients WHERE status=$1', ['active']),
       db.query('SELECT COALESCE(SUM(total_sent),0) as cnt FROM clients'),
       db.query("SELECT COALESCE(SUM(usdt_amount),0) as total FROM orders WHERE status='confirmed'"),
-      db.query("SELECT o.*, c.company_name FROM orders o JOIN clients c ON o.client_id=c.id ORDER BY o.created_at DESC LIMIT 10")
+      db.query("SELECT o.*, c.company_name FROM orders o JOIN clients c ON o.client_id=c.id ORDER BY o.created_at DESC LIMIT 10"),
+      db.query('SELECT COUNT(*) as cnt FROM campaigns')
     ]);
     res.json({
       total_clients: parseInt(clients.rows[0].cnt),
       total_sent: parseInt(totalSent.rows[0].cnt),
       total_revenue_usdt: parseFloat(totalRevenue.rows[0].total),
+      total_campaigns: parseInt(totalCampaigns.rows[0].cnt),
       recent_orders: recentOrders.rows
     });
   } catch (err) {
