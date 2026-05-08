@@ -131,9 +131,40 @@ router.get('/domains', async (req, res) => {
   res.json({ domains: result.rows });
 });
 
+router.post('/domains/:id/verify', async (req, res) => {
+  try {
+    const row = await db.query('SELECT * FROM sending_domains WHERE id=$1', [req.params.id]);
+    if (!row.rows[0]) return res.status(404).json({ error: 'Domain not found' });
+    const sd = row.rows[0];
+    if (!sd.resend_domain_id) return res.status(400).json({ error: 'Missing Resend domain id' });
+    let info;
+    try { info = await resend.domains.verify(sd.resend_domain_id); } catch (_) { info = null; }
+    const detail = await resend.domains.get(sd.resend_domain_id);
+    const status = (detail.status || 'pending').toLowerCase();
+    const verified = status === 'verified';
+    const upd = await db.query(
+      `UPDATE sending_domains
+       SET status=$1, dkim_status=$2, spf_status=$3, verified_at=COALESCE(verified_at, CASE WHEN $4 THEN NOW() ELSE NULL END)
+       WHERE id=$5 RETURNING *`,
+      [status, status, status, verified, sd.id]
+    );
+    res.json({ domain: upd.rows[0], records: detail.records, verify: info });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete('/domains/:id', async (req, res) => {
-  await db.query('DELETE FROM sending_domains WHERE id=$1', [req.params.id]);
-  res.json({ message: 'Domain deleted' });
+  try {
+    const row = await db.query('SELECT resend_domain_id FROM sending_domains WHERE id=$1', [req.params.id]);
+    if (row.rows[0]?.resend_domain_id) {
+      try { await resend.domains.remove(row.rows[0].resend_domain_id); } catch (_) {}
+    }
+    await db.query('DELETE FROM sending_domains WHERE id=$1', [req.params.id]);
+    res.json({ message: 'Domain deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

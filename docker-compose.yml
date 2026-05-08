@@ -42,6 +42,19 @@ services:
     networks:
       - sendblast
 
+  sweep-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: node src/workers/sweepWallets.js
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - sendblast
+
   frontend:
     image: nginx:alpine
     ports:
