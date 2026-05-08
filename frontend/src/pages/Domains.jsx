@@ -75,10 +75,13 @@ export default function Domains() {
         <Title level={4} style={{ margin: 0 }}>寄件網域</Title>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={load}>重整</Button>
-          {isAdmin && <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>新增網域</Button>}
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>新增網域</Button>
         </Space>
       </div>
-      {!isAdmin && <p style={{ color: '#666' }}>寄件網域由平台管理員設定與驗證；驗證完成後即可在 Campaign 選用。</p>}
+      <p style={{ color: '#666', marginBottom: 16 }}>
+        填入你的網域後，系統會給你 DNS 設定指引。設定完成後點「驗證」，等待 Resend 確認（約 5-10 分鐘）。
+        {isAdmin ? '驗證成功後即可供所有客戶使用。' : '驗證完成後即可在 Campaign 選用此網域寄信。'}
+      </p>
       <Table dataSource={domains} rowKey="id" loading={loading}
         columns={[
           { title: '網域', dataIndex: 'domain', key: 'domain' },

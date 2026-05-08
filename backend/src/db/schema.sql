@@ -39,13 +39,18 @@ CREATE TABLE IF NOT EXISTS client_users (
 -- Credit Packages (額度套裝)
 CREATE TABLE IF NOT EXISTS credit_packages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
     credits INTEGER NOT NULL,
     price_usdt DECIMAL(10,2) NOT NULL,
     status VARCHAR(50) DEFAULT 'active',  -- active, inactive
     sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+DO $$ BEGIN
+    ALTER TABLE credit_packages ADD CONSTRAINT credit_packages_name_unique UNIQUE (name);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Orders (USDT 訂單)
 CREATE SEQUENCE IF NOT EXISTS order_deposit_index_seq;

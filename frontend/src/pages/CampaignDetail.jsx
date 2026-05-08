@@ -57,10 +57,24 @@ export default function CampaignDetail() {
       <Title level={4}>{campaign.name} <Tag>{statusMap[campaign.status]}</Tag></Title>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={6}><Card><Statistic title="總收件人" value={campaign.total_recipients || 0} /></Card></Col>
-        <Col xs={12} sm={6}><Card><Statistic title="已發送" value={campaign.sent_count || 0} /></Card></Col>
-        <Col xs={12} sm={6}><Card><Statistic title="開信" value={campaign.open_count || 0} /></Card></Col>
-        <Col xs={12} sm={6}><Card><Statistic title="點擊" value={campaign.click_count || 0} /></Card></Col>
+        <Col xs={12} sm={4}><Card><Statistic title="總收件人" value={campaign.total_recipients || 0} /></Card></Col>
+        <Col xs={12} sm={4}><Card><Statistic title="已發送" value={campaign.sent_count || 0} /></Card></Col>
+        <Col xs={12} sm={4}><Card><Statistic title="送達" value={campaign.delivered_count || 0} /></Card></Col>
+        <Col xs={12} sm={4}><Card>
+          <Statistic
+            title="送達率"
+            value={campaign.sent_count > 0 ? ((campaign.delivered_count / campaign.sent_count) * 100).toFixed(1) : '0'}
+            suffix="%"
+          />
+        </Card></Col>
+        <Col xs={12} sm={4}><Card><Statistic title="退信" value={campaign.bounce_count || 0} /></Card></Col>
+        <Col xs={12} sm={4}><Card>
+          <Statistic
+            title="開信率"
+            value={campaign.delivered_count > 0 ? ((campaign.open_count / campaign.delivered_count) * 100).toFixed(1) : '0'}
+            suffix="%"
+          />
+        </Card></Col>
       </Row>
 
       <Card title="詳細資訊" style={{ marginBottom: 24 }}>

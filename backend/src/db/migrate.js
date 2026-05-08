@@ -23,7 +23,8 @@ async function migrate() {
       await pool.query(
         `INSERT INTO credit_packages (name, credits, price_usdt, status, sort_order)
          VALUES ($1,$2,$3,'active',$4)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (name) DO UPDATE SET
+           credits=EXCLUDED.credits, price_usdt=EXCLUDED.price_usdt, sort_order=EXCLUDED.sort_order`,
         [pkg.name, pkg.credits, pkg.price, packages.indexOf(pkg)]
       );
     }

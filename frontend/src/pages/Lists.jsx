@@ -32,8 +32,17 @@ export default function Lists() {
   return (
     <AppLayout>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>名單</Title>
+        <Title level={4} style={{ margin: 0 }}>名單（標籤）</Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>建立名單</Button>
+      </div>
+
+      {/* 名詞說明 */}
+      <div style={{ background: '#f0f5ff', border: '1px solid #adc6ff', borderRadius: 8, padding: '12px 16px', marginBottom: 20 }}>
+        <p style={{ margin: 0, fontSize: 13, color: '#333' }}>
+          <strong>📋 名單（標籤）</strong>：用來「分組」你的聯絡人。<br/>
+          例如「VIP會員」「新註冊用戶」「上次活動參加者」——建立好名單，發 Campaign 時選擇一個名單，系統就會寄給該名單內的所有人。<br/>
+          <strong>📒 聯絡人</strong>：實際的 Email 地址，在「聯絡人」頁面管理和匯入。
+        </p>
       </div>
       <Table dataSource={lists} rowKey="id" loading={loading}
         onRow={(r) => ({ onClick: () => navigate(`/lists/${r.id}`), style: { cursor: 'pointer' } })}
