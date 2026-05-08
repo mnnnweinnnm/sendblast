@@ -28,6 +28,20 @@ services:
     networks:
       - sendblast
 
+  payment-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: node src/workers/paymentMonitor.js
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - sendblast
+
   frontend:
     image: nginx:alpine
     ports:

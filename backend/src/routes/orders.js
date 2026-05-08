@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db/pool');
 const { authenticate } = require('../middleware/auth');
-const crypto = require('crypto');
+const { deriveAddress, validTronAddress } = require('../services/tron');
 
 const router = express.Router();
 router.use(authenticate);
@@ -19,17 +19,21 @@ router.post('/', async (req, res) => {
     const pkg = await db.query('SELECT * FROM credit_packages WHERE id=$1 AND status=$2', [package_id, 'active']);
     if (!pkg.rows[0]) return res.status(404).json({ error: 'Package not found' });
 
-    // Generate a unique TRC20 deposit address
-    // In production: use HD wallet to derive address per order
-    // For now: use a fixed address + order ID as reference
-    const orderId = crypto.randomUUID().split('-')[0].toUpperCase();
-    const trc20_address = process.env.PLATFORM_USDT_ADDRESS || 'TRX1234567890abcdef'; // Replace with real address
+    const idxResult = await db.query("SELECT nextval('order_deposit_index_seq') as idx");
+    const depositIndex = Number(idxResult.rows[0].idx);
+    const allocated = deriveAddress(depositIndex);
+    const fallbackAddress = process.env.PLATFORM_USDT_ADDRESS;
+    const trc20_address = allocated?.address || fallbackAddress;
+    if (!trc20_address || !validTronAddress(trc20_address)) {
+      return res.status(500).json({ error: 'TRC-20 payment address is not configured' });
+    }
+
     const expected_amount = pkg.rows[0].price_usdt.toString();
 
     const result = await db.query(
-      `INSERT INTO orders (client_id, package_id, credits, usdt_amount, trc20_address, expected_amount, status)
-       VALUES ($1,$2,$3,$4,$5,$6,'pending') RETURNING *`,
-      [req.user.client_id, package_id, pkg.rows[0].credits, pkg.rows[0].price_usdt, trc20_address, expected_amount]
+      `INSERT INTO orders (client_id, package_id, credits, usdt_amount, trc20_address, deposit_path, deposit_index, expected_amount, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending') RETURNING *`,
+      [req.user.client_id, package_id, pkg.rows[0].credits, pkg.rows[0].price_usdt, trc20_address, allocated?.path || null, depositIndex, expected_amount]
     );
 
     res.json({ order: result.rows[0] });

@@ -48,6 +48,8 @@ CREATE TABLE credit_packages (
 );
 
 -- Orders (USDT 訂單)
+CREATE SEQUENCE IF NOT EXISTS order_deposit_index_seq;
+
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -163,3 +165,9 @@ CREATE INDEX idx_email_events_type ON email_events(event_type);
 CREATE INDEX idx_orders_client_id ON orders(client_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_client_users_client_id ON client_users(client_id);
+
+
+-- Idempotent upgrades for existing deployments
+CREATE SEQUENCE IF NOT EXISTS order_deposit_index_seq;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS deposit_path VARCHAR(255);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS deposit_index BIGINT UNIQUE;
