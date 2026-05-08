@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Typography, Tag, message, Space } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Typography, Tag, message, Space, Popconfirm } from 'antd';
+import { PlusOutlined, ReloadOutlined, CheckCircleOutlined, DeleteOutlined } from '@ant-design/icons';
 import AppLayout from '../components/AppLayout';
 import AdminLayout from '../components/AdminLayout';
 import api, { getUser } from '../utils/api';
@@ -45,6 +45,30 @@ export default function Domains() {
     } catch (err) { message.error(err.response?.data?.error || '新增失敗'); }
   };
 
+  const handleVerify = async (id) => {
+    try {
+      const { data } = await api.post(`/admin/domains/${id}/verify`);
+      if (data.records) { setDnsRecords(data.records); setDnsOpen(true); }
+      message.success(`狀態：${data.domain?.status || 'updated'}`);
+      load();
+    } catch (err) { message.error(err.response?.data?.error || '驗證失敗'); }
+  };
+  const handleDelete = async (id) => {
+    try { await api.delete(`/admin/domains/${id}`); message.success('已刪除'); load(); }
+    catch (err) { message.error(err.response?.data?.error || '刪除失敗'); }
+  };
+
+  const adminColumns = isAdmin ? [{
+    title: '操作', key: 'actions', render: (_, r) => (
+      <Space>
+        <Button size="small" icon={<CheckCircleOutlined />} onClick={() => handleVerify(r.id)}>驗證</Button>
+        <Popconfirm title="刪除網域？" onConfirm={() => handleDelete(r.id)}>
+          <Button size="small" danger icon={<DeleteOutlined />} />
+        </Popconfirm>
+      </Space>
+    )
+  }] : [];
+
   return (
     <Layout>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -62,6 +86,7 @@ export default function Domains() {
           { title: 'DKIM', dataIndex: 'dkim_status', key: 'dkim', render: s => statusTag(s) },
           { title: 'SPF', dataIndex: 'spf_status', key: 'spf', render: s => statusTag(s) },
           { title: '驗證時間', dataIndex: 'verified_at', key: 'verified', render: d => d ? new Date(d).toLocaleDateString() : '-' },
+          ...adminColumns,
         ]}
       />
       <Modal title="新增寄件網域" open={modalOpen} onCancel={() => setModalOpen(false)} onOk={() => form.submit()}>
